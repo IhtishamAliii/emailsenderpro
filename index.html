@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>Mobile Mailer — GAS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <style>
+        :root{ 
+      --bg: linear-gradient(135deg, #0a0e1a 0%, #1a1f2e 50%, #0f1419 100%);
+      --card: linear-gradient(145deg, #1a2332 0%, #0f1824 100%);
+      --muted: #94a3b8;
+      --text: #f1f5f9;
+      --accent: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      --accent-glow: rgba(16, 185, 129, 0.3);
+      --danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      --danger-glow: rgba(239, 68, 68, 0.3);
+      --border: rgba(148, 163, 184, 0.1);
+      --border-hover: rgba(148, 163, 184, 0.2);
+      --chip: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+      --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+      --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+    }
+    
+    * { box-sizing: border-box; }
+    
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      background-attachment: fixed;
+      color: var(--text);
+      overflow-x: hidden;
+    }
+    
+    .app {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 16px 14px 140px;
+      position: relative;
+    }
+    
+    header {
+      position: sticky;
+      top: 0;
+      background: linear-gradient(180deg, rgba(10, 14, 26, 0.95), rgba(10, 14, 26, 0.8));
+      backdrop-filter: blur(20px) saturate(180%);
+      z-index: 5;
+      padding: 16px 14px;
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+    
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: linear-gradient(135deg, #f1f5f9 0%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .tabs {
+        display: block;
+        margin-top: 16px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 2px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        scroll-behavior: smooth;
+        white-space: nowrap;
+      }
+      
+      .tabs::-webkit-scrollbar {
+        display: none;
+      }
+      
+      .tab {
+        display: inline-block;
+        width: calc(20% - 5px);
+        min-width: 100px;
+        text-align: center;
+        padding: 10px 8px;
+        margin-right: 6px;
+        border: 1px solid var(--border);
+        background: var(--chip);
+        border-radius: 14px;
+        font-weight: 600;
+        font-size: 12px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        vertical-align: top;
+        box-sizing: border-box;
+        color: #f1f5f9;
+      }
+      
+      .tab:last-child {
+        margin-right: 0;
+      }
+    
+    .tab::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      transition: left 0.5s;
+    }
+    
+    .tab:hover::before {
+      left: 100%;
+    }
+    
+    .tab:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+    
+    .tab.active {
+      background: var(--accent);
+      border-color: transparent;
+      color: #0f172a;
+      font-weight: 700;
+      box-shadow: 0 0 20px var(--accent-glow), var(--shadow);
+      transform: translateY(-2px);
+    }
+    
+    .hidden { display: none; }
+    
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 20px;
+      margin: 20px 0;
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.3), transparent);
+    }
+    
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.5);
+      border-color: var(--border-hover);
+    }
+    
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      width: 100%;
+    }
+    
+    input, textarea, select {
+      width: 100%;
+      padding: 14px 16px;
+      background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      font-size: 15px;
+      transition: all 0.3s ease;
+      outline: none;
+      display: block;
+      margin-bottom: 12px;
+    }
+    
+    input:focus, textarea:focus, select:focus {
+      border-color: #10b981;
+      box-shadow: 0 0 0 3px var(--accent-glow), inset 0 2px 4px rgba(0, 0, 0, 0.2);
+      transform: translateY(-1px);
+    }
+    
+    textarea {
+      min-height: 140px;
+      resize: vertical;
+      font-family: inherit;
+      line-height: 1.6;
+    }
+    
+    .row {
+      display: block;
+    }
+    
+    .row > div {
+      margin-bottom: 16px;
+      width: 100%;
+    }
+    
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 20px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: var(--chip);
+      color: var(--text);
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      text-decoration: none;
+      width: 100%;
+      margin-bottom: 12px;
+    }
+    
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.3s, height 0.3s;
+    }
+    
+    .btn:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+    
+    .btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 25px rgba(0, 0, 0, 0.4);
+      border-color: var(--border-hover);
+    }
+    
+    .btn:active {
+      transform: translateY(-1px);
+    }
+    
+    .btn.full { width: 100%; }
+    
+    .btn.accent {
+      background: var(--accent);
+      border-color: transparent;
+      color: #0f172a;
+      font-weight: 700;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    
+    .btn.accent:hover {
+      box-shadow: 0 0 30px var(--accent-glow), 0 12px 25px rgba(0, 0, 0, 0.4);
+    }
+    
+    .btn.danger {
+      background: var(--danger);
+      border-color: transparent;
+      color: white;
+      font-weight: 700;
+      box-shadow: 0 0 20px var(--danger-glow);
+    }
+    
+    .btn.danger:hover {
+      box-shadow: 0 0 30px var(--danger-glow), 0 12px 25px rgba(0, 0, 0, 0.4);
+    }
+    
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 12px 0;
+    }
+    
+    .chip {
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      background: var(--chip);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      cursor: default;
+    }
+    
+    .chip:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    .footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(0deg, rgba(10, 14, 26, 0.98), rgba(10, 14, 26, 0.85));
+      backdrop-filter: blur(20px) saturate(180%);
+      border-top: 1px solid var(--border);
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+      z-index: 6;
+      box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.3);
+    }
+    
+    .warn {
+      color: #ef4444;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    
+    .preview {
+      background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      overflow: auto;
+      margin: 16px 0;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: var(--chip);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      transition: all 0.3s ease;
+    }
+    
+    .stat:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+      border-color: var(--border-hover);
+    }
+    
+    .stat .num {
+      font-size: 28px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .grid {
+      display: block;
+    }
+    
+    .grid > div {
+      margin-bottom: 16px;
+    }
+    
+    .stats {
+      display: block;
+      margin-bottom: 24px;
+    }
+    
+    .stats > div {
+      margin-bottom: 16px;
+    }
+    
+    .notice {
+      background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 16px;
+      padding: 16px;
+      color: #93c5fd;
+      font-size: 14px;
+      line-height: 1.5;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .card {
+      animation: fadeInUp 0.6s ease-out;
+    }
+    
+    /* Responsive Design */
+    @media (min-width: 768px) {
+      .app {
+        max-width: 768px;
+        padding: 24px 20px 160px;
+      }
+      
+      header {
+        padding: 20px 20px;
+      }
+      
+      h1 {
+        font-size: 28px;
+      }
+      
+      .tabs {
+         margin-top: 20px;
+         padding: 4px;
+       }
+       
+       .tab {
+         padding: 12px 18px;
+         font-size: 13px;
+         border-radius: 16px;
+         min-width: 120px;
+         margin-right: 10px;
+       }
+      
+      .card {
+        padding: 28px;
+        margin: 24px 0;
+      }
+      
+      .row > div {
+        margin-bottom: 20px;
+      }
+      
+      .grid > div {
+        margin-bottom: 20px;
+      }
+      
+      .footer {
+        padding: 20px;
+        gap: 16px;
+      }
+      
+      .btn {
+        padding: 16px 24px;
+        font-size: 15px;
+      }
+      
+      input, textarea, select {
+        padding: 16px 20px;
+        font-size: 16px;
+      }
+      
+      .stat {
+        padding: 20px;
+      }
+      
+      .stat .num {
+        font-size: 32px;
+      }
+    }
+    
+    @media (min-width: 1024px) {
+       .app {
+         max-width: 900px;
+         padding: 32px 24px 180px;
+       }
+       
+       header {
+         padding: 24px 24px;
+       }
+       
+       h1 {
+         font-size: 32px;
+       }
+       
+       .tabs {
+         margin-top: 24px;
+         padding: 6px;
+         text-align: center;
+       }
+       
+       .tab {
+         padding: 14px 24px;
+         font-size: 14px;
+         border-radius: 18px;
+         min-width: 140px;
+         margin-right: 12px;
+       }
+      
+      .card {
+        padding: 32px;
+        margin: 32px 0;
+      }
+      
+      .row > div {
+        margin-bottom: 24px;
+      }
+      
+      .grid > div {
+        margin-bottom: 24px;
+      }
+      
+      .footer {
+        padding: 24px;
+        gap: 20px;
+      }
+      
+      .btn {
+        padding: 18px 28px;
+        font-size: 16px;
+      }
+      
+      input, textarea, select {
+        padding: 18px 24px;
+        font-size: 16px;
+      }
+      
+      .stat {
+        padding: 24px;
+      }
+      
+      .stat .num {
+        font-size: 36px;
+      }
+      
+      /* Desktop-specific enhancements */
+      .card:hover {
+        transform: translateY(-6px);
+      }
+      
+      .btn:hover {
+        transform: translateY(-4px);
+      }
+      
+      .tab:hover {
+        transform: translateY(-3px);
+      }
+    }
+    
+    @media (min-width: 1280px) {
+       .app {
+         max-width: 1024px;
+         padding: 40px 32px 200px;
+       }
+       
+       .tabs {
+         margin-top: 28px;
+         padding: 8px;
+       }
+       
+       .tab {
+         padding: 16px 28px;
+         font-size: 15px;
+         border-radius: 20px;
+         min-width: 160px;
+         margin-right: 16px;
+       }
+       
+       .row > div {
+         margin-bottom: 28px;
+       }
+       
+       .stats > div {
+          margin-bottom: 28px;
+        }
+       
+       .card {
+         padding: 40px;
+       }
+     }
+  </style>
+</head>
+
+<body>
+    <header>
+        <h1><i class="fa-solid fa-paper-plane"></i> Mobile Mailer</h1>
+        <div class="tabs">
+            <button class="tab active" data-tab="compose"><i class="fa-regular fa-pen-to-square"></i>&nbsp;Compose</button>
+            <button class="tab" data-tab="contacts"><i class="fa-solid fa-address-book"></i>&nbsp;Contacts</button>
+            <button class="tab" data-tab="dashboard"><i class="fa-solid fa-chart-simple"></i>&nbsp;Dashboard</button>
+            <button class="tab" data-tab="settings"><i class="fa-solid fa-gear"></i>&nbsp;Settings</button>
+            <button class="tab" data-tab="diagnostics"><i class="fa-solid fa-stethoscope"></i>&nbsp;Diagnostics</button>
+        </div>
+    </header>
+    <div class="app">
+        <!-- Compose -->
+        <section id="compose" class="card">
+            <div class="chips">
+                <span class="chip">Plain or HTML Email</span>
+                <span class="chip">Attachments</span>
+                <span class="chip">UTM + Tracking</span>
+            </div>
+            <div class="row">
+                <div>
+                    <label>Campaign Name</label>
+                    <input id="campaignName" placeholder="September Outreach A/B" />
+                </div>
+                <div>
+                    <label>From Alias (optional)</label>
+                    <input id="fromName" placeholder="Your Brand" />
+                </div>
+            </div>
+            <label>Subject</label>
+            <input id="subject" placeholder="Quick question about {{Company}}" />
+            <div class="row">
+                <div>
+                    <label>Message Type</label>
+                    <select id="msgType">
+                        <option value="plain">Plain Text</option>
+                        <option value="html">HTML</option>
+                    </select>
+                </div>
+                <div>
+                    <label>UTM Tagging</label>
+                    <select id="utm">
+                        <option value="on">On</option>
+                        <option value="off">Off</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div>
+                    <label>Contact List to Send To</label>
+                    <select id="targetList">
+                        <option value="">Loading lists...</option>
+                    </select>
+                    <button class="btn" id="btnRefreshLists" style="margin-top: 8px; padding: 8px 12px; font-size: 12px;"><i class="fa-solid fa-rotate"></i> Refresh Lists</button>
+                    <div style="font-size: 11px; color: #666; margin-top: 4px;">
+                        <strong>Troubleshooting:</strong> If lists fail to load, check:<br>
+                        • <strong>Proxy Enabled:</strong> CORS issues are automatically handled via AllOrigins proxy service<br>
+                        • Web App URL is correct and deployed<br>
+                        • Web App access set to "Anyone with the link"<br>
+                        • No corporate firewall blocking requests
+                    </div>
+                </div>
+                <div>
+                    <label>Create New List Name (optional)</label>
+                    <input id="newListName" placeholder="Enter new list name to create" />
+                </div>
+            </div>
+            <label>Message Body</label>
+            <textarea id="body" placeholder="Write your email... Use {{name}} placeholders."></textarea>
+            <div class="row">
+                <div>
+                    <label>Attachment(s)</label>
+                    <input id="attachments" type="file" multiple />
+                    <div id="attachmentList" class="chips" style="margin-top: 8px;"></div>
+                </div>
+                <div>
+                    <label>Test Recipient</label>
+                    <input id="testEmail" placeholder="name@example.com" />
+                </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+                <button class="btn" id="btnPreview"><i class="fa-regular fa-eye"></i> Preview</button>
+                <button class="btn" id="btnTest"><i class="fa-solid fa-vial"></i> Send Test</button>
+            </div>
+            <div id="preview" class="preview hidden"></div>
+            <div class="row" style="margin-top:8px">
+                <button class="btn accent" id="btnSend"><i class="fa-solid fa-paper-plane"></i> Send Campaign</button>
+                <button class="btn danger" id="btnClear"><i class="fa-regular fa-trash-can"></i> Clear</button>
+            </div>
+            <div id="composeMsg" class="notice" style="margin-top:10px"></div>
+        </section>
+        <!-- Contacts -->
+        <section id="contacts" class="card hidden">
+            <div class="grid">
+                <div>
+                    <label>Import Contacts (CSV/TXT/XLSX)</label>
+                    <input id="fileInput" type="file" accept=".csv,.txt,.xlsx" />
+                </div>
+                <div>
+                    <label>List Name</label>
+                    <input id="listName" placeholder="Default" />
+                </div>
+            </div>
+            <div class="row" style="margin-top:8px">
+                <button class="btn" id="btnParse"><i class="fa-solid fa-file-import"></i> Parse</button>
+                <button class="btn" id="btnUpload"><i class="fa-solid fa-cloud-arrow-up"></i> Upload to Sheets</button>
+                <div style="font-size: 11px; color: #666; margin-top: 8px;">
+                    <strong>Upload Issues?</strong> Common causes:<br>
+                    • <strong>Proxy Enabled:</strong> CORS issues are automatically handled via AllOrigins proxy service<br>
+                    • <strong>HTML Response Error:</strong> Backend returning HTML instead of JSON - check deployment<br>
+                    • <strong>Backend Update Required:</strong> Copy updated backend.js code to Google Apps Script<br>
+                    • Web App URL not configured or incorrect<br>
+                    • Web App not deployed or permissions not set to "Anyone with the link"<br>
+                    • <strong>Debug:</strong> Check browser console (F12) for detailed error logs and backend response<br>
+                    • Corporate firewall blocking Google Apps Script requests
+                </div>
+            </div>
+            <div id="importSummary" class="notice" style="margin-top:10px"></div>
+            <div class="chips" id="contactChips"></div>
+        </section>
+        <!-- Dashboard -->
+        <section id="dashboard" class="card hidden">
+            <div class="grid stats">
+                <div class="stat"><i class="fa-regular fa-envelope-open"></i> <span class="num" id="sentCount">0</span> Sent</div>
+                <div class="stat"><i class="fa-regular fa-eye"></i> <span class="num" id="openCount">0</span> Opens</div>
+                <div class="stat"><i class="fa-solid fa-arrow-up-right-from-square"></i> <span class="num" id="clickCount">0</span> Clicks</div>
+                <div class="stat"><i class="fa-regular fa-circle-xmark"></i> <span class="num" id="bounceCount">0</span> Bounces</div>
+            </div>
+            <canvas id="chart" style="width:100%;height:240px;margin-top:12px"></canvas>
+            <div class="row" style="margin-top:8px">
+                <button class="btn" id="btnRefresh"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                <button class="btn" id="btnExport"><i class="fa-solid fa-file-arrow-down"></i> Export CSV</button>
+            </div>
+            <div id="dashMsg" class="notice" style="margin-top:10px"></div>
+        </section>
+        <!-- Settings -->
+        <section id="settings" class="card hidden">
+            <label>Web App URL (from Apps Script)</label>
+            <input id="webAppUrl" placeholder="https://script.google.com/macros/s/.../exec" />
+            <label>Sender Email (must be your Gmail/Workspace)</label>
+            <input id="senderEmail" placeholder="you@domain.com" />
+            <div class="row" style="margin-top:8px">
+                <button class="btn full" id="btnSaveSettings"><i class="fa-regular fa-floppy-disk"></i> Save Settings</button>
+            </div>
+            <p class="warn" style="margin-top:8px">If you see <b>Failed to fetch</b>, confirm your Web App is deployed to <b>Anyone with the link</b> and the URL is correct. Try Diagnostics ⇒ Ping.</p>
+            <div class="chips">
+                <span class="chip">Unsubscribe Link</span>
+                <span class="chip">Rate Limit</span>
+                <span class="chip">Templates (Local)</span>
+            </div>
+        </section>
+        <!-- Diagnostics / Self-tests -->
+        <section id="diagnostics" class="card hidden">
+            <div class="row">
+                <button class="btn" id="btnPing"><i class="fa-solid fa-plug"></i> Ping</button>
+                <button class="btn" id="btnTestStats"><i class="fa-solid fa-chart-line"></i> Stats Shape</button>
+            </div>
+            <div class="row" style="margin-top:8px">
+                <button class="btn" id="btnTestUpload"><i class="fa-solid fa-user-plus"></i> Upload One Contact</button>
+                <button class="btn" id="btnTestSendDry"><i class="fa-solid fa-envelope"></i> Dry‑Run Send (no email)</button>
+            </div>
+            <div id="diagMsg" class="notice" style="margin-top:10px"></div>
+        </section>
+    </div>
+    <div class="footer">
+        <button class="btn" id="btnSaveDraft"><i class="fa-regular fa-bookmark"></i> Save Draft</button>
+        <button class="btn" id="btnLoadDraft"><i class="fa-solid fa-book-bookmark"></i> Load Draft</button>
+        <button class="btn" id="btnHelp"><i class="fa-regular fa-circle-question"></i> Help</button>
+    </div>
+    <!-- CORS Troubleshooting Section -->
+    <section id="cors-troubleshooting" class="card hidden">
+        <h3>🔧 CORS Troubleshooting</h3>
+        <div style="background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%); border: 1px solid rgba(239, 68, 68, 0.3); padding: 15px; border-radius: 16px; margin-bottom: 15px;">
+            <h4 style="margin-top: 0; color: #22c55e;">✅ CORS Issue Resolved!</h4>
+            <p><strong>Solution Implemented:</strong> This application now uses the AllOrigins proxy service to automatically bypass CORS restrictions when communicating with Google Apps Script.</p>
+            <h5>How It Works:</h5>
+            <ul>
+                <li>🔄 <strong>Automatic Proxy:</strong> All Google Apps Script requests are routed through AllOrigins proxy</li>
+                <li>🌐 <strong>Works from Localhost:</strong> No need to deploy to a live domain for testing</li>
+                <li>🔒 <strong>Secure:</strong> No browser security flags required</li>
+            </ul>
+            <h5>Backup Solutions (if proxy fails):</h5>
+            <ol>
+                <li><strong>Deploy to a Live Domain:</strong>
+                    <ul>
+                        <li>Upload this HTML file to GitHub Pages, Netlify, etc.</li>
+                        <li>Access via https:// instead of localhost</li>
+                    </ul>
+                </li>
+                <li><strong>Development Workaround:</strong>
+                    <ul>
+                        <li>Start Chrome with: <code>chrome.exe --disable-web-security --user-data-dir="/tmp/chrome_dev"</code></li>
+                        <li>⚠️ Only for development - disables security features</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+    </section>
+    <script>
+    // ======= CONFIG & STATE =======
+    const LS = window.localStorage;
+    const STATE = { contacts: [], lastImportPreview: [], trackingChart: null };
+
+    function getSettings() {
+        return {
+            webAppUrl: document.getElementById('webAppUrl').value || LS.getItem('webAppUrl') || 'WEB_APP_URL_HERE',
+            senderEmail: document.getElementById('senderEmail').value || LS.getItem('senderEmail') || ''
+        }
+    }
+
+    // ======= Tabs =======
+    document.querySelectorAll('.tab').forEach(t => {
+        t.addEventListener('click', () => {
+            document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+            t.classList.add('active');
+            const id = t.dataset.tab;
+            document.querySelectorAll('section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        })
+    })
+
+    // ======= Helpers =======
+    function msg(elId, html) { const el = document.getElementById(elId);
+        el.innerHTML = html; }
+
+    function sanitize(s) { return (s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+    function template(str, data) { return (str || '').replace(/{{(\w+)}}/g, (_, k) => data[k] || ''); }
+
+    function fileToText(file) { return new Promise((res, rej) => { const r = new FileReader();
+            r.onload = () => res(r.result);
+            r.onerror = rej;
+            r.readAsText(file); }); }
+
+    function readFilesAsBase64(input) {
+        const files = input.files || [];
+        const tasks = [];
+        for (const f of files) {
+            tasks.push(new Promise((resolve, reject) => {
+                const fr = new FileReader();
+                fr.onload = () => {
+                    const dataUrl = fr.result; // data:...;base64,XXXX
+                    const base64 = String(dataUrl).split(',')[1] || '';
+                    resolve({ name: f.name, mimeType: f.type || 'application/octet-stream', data: base64 });
+                };
+                fr.onerror = reject;
+                fr.readAsDataURL(f);
+            }));
+        }
+        return Promise.all(tasks);
+    }
+
+    async function safeFetch(url, options = {}) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        try {
+            // Use AllOrigins proxy to bypass CORS for Google Apps Script
+            if (url.includes('script.google.com')) {
+                let proxyUrl;
+                if (options.method === 'POST') {
+                    // For POST requests, convert FormData to URL parameters and use GET
+                    // This is required because AllOrigins proxy doesn't support POST body forwarding
+                    const formData = options.body;
+                    const params = new URLSearchParams();
+                    for (const [key, value] of formData.entries()) {
+                        params.append(key, value);
+                    }
+                    // Google Apps Script can handle both GET and POST for the same endpoint
+                    // We'll append the data as URL parameters
+                    const fullUrl = `${url}?${params.toString()}`;
+                    proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(fullUrl)}`;
+                } else {
+                    proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                }
+
+                const response = await fetch(proxyUrl, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                // Check if the proxied content is HTML (error page) instead of JSON
+                if (data.contents && data.contents.trim().startsWith('<!DOCTYPE') || data.contents.includes('<html>')) {
+                    throw new Error('Google Apps Script returned HTML instead of JSON. This usually means: 1) Web App URL is incorrect, 2) Web App is not deployed, or 3) Web App permissions are not set to "Anyone with the link"');
+                }
+
+                // Create a mock Response object with the proxied content
+                return {
+                    ok: true,
+                    status: 200,
+                    statusText: 'OK',
+                    json: async () => JSON.parse(data.contents),
+                    text: async () => data.contents
+                };
+            } else {
+                // Direct fetch for non-Google Apps Script URLs
+                const response = await fetch(url, { ...options, signal: controller.signal });
+                clearTimeout(timeoutId);
+                if (!response.ok) {
+                    const text = await response.text().catch(() => '');
+                    throw new Error(`HTTP ${response.status} ${response.statusText} — ${text.slice(0,200)}`);
+                }
+                return response;
+            }
+        } catch (error) {
+            clearTimeout(timeoutId);
+            const hint = `Failed to fetch. Common causes: \n• Wrong Web App URL or not deployed \n• Web App access not set to "Anyone with the link" (login redirect) \n• Corporate network/extension blocking cross‑site requests`;
+            throw new Error(error.message + "\n" + hint);
+        }
+    }
+
+    // ======= Contact Lists Management =======
+    async function loadContactLists() {
+        const { webAppUrl } = getSettings();
+        const select = document.getElementById('targetList');
+
+        if (!webAppUrl || webAppUrl.includes('WEB_APP_URL_HERE') || webAppUrl.trim() === '') {
+            select.innerHTML = '<option value="Default">Default (Configure Web App URL in Settings first)</option>';
+            return;
+        }
+
+        // Show loading state
+        select.innerHTML = '<option value="">Loading lists...</option>';
+
+        try {
+            const res = await safeFetch(`${webAppUrl}?action=getLists`);
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+            const data = await res.json();
+            const lists = data.lists || ['Default'];
+
+            if (lists.length === 0) {
+                select.innerHTML = '<option value="Default">Default (No lists found on backend)</option>';
+            } else {
+                select.innerHTML = lists.map(list => `<option value="${sanitize(list)}">${sanitize(list)}</option>`).join('');
+            }
+        } catch (err) {
+            let errorMsg = 'Default (Backend Error: ';
+            if (err.message.includes('Failed to fetch') || err.name === 'TypeError') {
+                errorMsg += 'Connection failed - check Web App URL)';
+            } else if (err.message.includes('HTTP 4')) {
+                errorMsg += 'Access denied - check permissions)';
+            } else if (err.message.includes('HTTP 5')) {
+                errorMsg += 'Server error)';
+            } else {
+                errorMsg += 'Connection failed)';
+            }
+            select.innerHTML = `<option value="Default">${errorMsg}</option>`;
+            console.warn('Could not load contact lists from backend:', err.message);
+        }
+    }
+
+    document.getElementById('btnRefreshLists').addEventListener('click', loadContactLists);
+
+    // Load contact lists when page loads
+    window.addEventListener('load', loadContactLists);
+
+    // ======= Contacts Import =======
+    document.getElementById('btnParse').addEventListener('click', async () => {
+        const f = document.getElementById('fileInput').files[0];
+        if (!f) { msg('importSummary', '<b>No file selected.</b>'); return; }
+        let rows = [];
+        try {
+            if (f.name.endsWith('.csv') || f.name.endsWith('.txt')) {
+                const text = await fileToText(f);
+                const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+                for (const line of lines) {
+                    if (line.includes(',')) {
+                        const [email, name] = line.split(',');
+                        if (email) rows.push({ email: email.trim(), name: (name || '').trim() });
+                    } else {
+                        rows.push({ email: line.trim(), name: '' });
+                    }
+                }
+            } else if (f.name.endsWith('.xlsx')) {
+                const data = await f.arrayBuffer();
+                const wb = XLSX.read(data, { type: 'array' });
+                const ws = wb.Sheets[wb.SheetNames[0]]; // first sheet
+                const json = XLSX.utils.sheet_to_json(ws, { defval: '' });
+                json.forEach(r => { if (r.email || r.Email) { rows.push({ email: (r.email || r.Email).toString().trim(), name: (r.name || r.Name || '').toString().trim() }); } });
+            }
+        } catch (e) { msg('importSummary', 'Parse error: ' + sanitize(e.message)); return; }
+
+        rows = rows.filter(r => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(r.email));
+        STATE.contacts = rows;
+        STATE.lastImportPreview = rows.slice(0, 10);
+        msg('importSummary', `Parsed <b>${rows.length}</b> contacts. Showing first 10 below.`);
+        const chips = rows.slice(0, 10).map(r => `<span class="chip">${sanitize(r.email)}${r.name?(' · '+sanitize(r.name)):''}</span>`).join('');
+        document.getElementById('contactChips').innerHTML = chips;
+    });
+
+    document.getElementById('btnUpload').addEventListener('click', async () => {
+        const { webAppUrl } = getSettings();
+        const list = document.getElementById('listName').value || 'Default';
+        if (!webAppUrl || webAppUrl.includes('WEB_APP_URL_HERE')) { alert('Set Web App URL in Settings.'); return; }
+        if (!STATE.contacts.length) { alert('Nothing to upload. Parse contacts first.'); return; }
+        msg('importSummary', 'Uploading...');
+        try {
+            const fd = new FormData();
+            fd.append('action', 'uploadContacts');
+            fd.append('list', list);
+            fd.append('contacts', JSON.stringify(STATE.contacts));
+
+            console.log('Upload Debug Info:');
+            console.log('- Contacts to upload:', STATE.contacts.length);
+            console.log('- Target list:', list);
+            console.log('- First contact:', STATE.contacts[0]);
+
+            const res = await safeFetch(webAppUrl, { method: 'POST', body: fd });
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+            const data = await res.json();
+
+            console.log('Backend Response:', data);
+
+            msg('importSummary', `Uploaded <b>${data.inserted||0}</b> / ${STATE.contacts.length}. Duplicates skipped: ${data.skipped||0}.`);
+        } catch (err) {
+            let errorMsg = 'Upload failed: ';
+            if (err.message.includes('Failed to fetch') || err.name === 'TypeError') {
+                errorMsg += 'Cannot connect to backend. Check Web App URL and deployment status.';
+            } else if (err.message.includes('HTTP 4')) {
+                errorMsg += 'Access denied. Ensure Web App is deployed and set to "Anyone with the link".';
+            } else if (err.message.includes('HTTP 5')) {
+                errorMsg += 'Server error. Check Web App logs and try again.';
+            } else {
+                errorMsg += err.message;
+            }
+            msg('importSummary', errorMsg);
+            console.error('Contact upload error:', err);
+        }
+    });
+
+    // ======= Compose / Preview / Send =======
+    document.getElementById('btnPreview').addEventListener('click', () => {
+        const msgType = document.getElementById('msgType').value;
+        const body = document.getElementById('body').value;
+        const preview = document.getElementById('preview');
+        preview.classList.remove('hidden');
+        preview.innerHTML = (msgType === 'html') ? body : `<pre style="white-space:pre-wrap">${sanitize(body)}</pre>`;
+    });
+
+    async function send(action) {
+        const s = getSettings();
+        if (!s.webAppUrl || s.webAppUrl.includes('WEB_APP_URL_HERE')) { alert('Set Web App URL in Settings.'); return; }
+
+        // Get selected list
+        const targetList = document.getElementById('targetList').value;
+        const newListName = document.getElementById('newListName').value.trim();
+
+        let listToUse;
+        if (newListName) {
+            listToUse = newListName;
+        } else if (targetList) {
+            listToUse = targetList;
+        } else {
+            alert('Please select a contact list or enter a new list name.');
+            return;
+        }
+
+        const payload = {
+            action,
+            campaignName: document.getElementById('campaignName').value || ('Campaign-' + Date.now()),
+            fromName: document.getElementById('fromName').value || '',
+            senderEmail: s.senderEmail,
+            subject: document.getElementById('subject').value,
+            msgType: document.getElementById('msgType').value,
+            utm: document.getElementById('utm').value,
+            body: document.getElementById('body').value,
+            targetList: listToUse
+        };
+
+        if (action === 'sendCampaign') {
+            // For campaign sending, we'll use the target list from backend instead of in-memory contacts
+            payload.useBackendList = true;
+            payload.listName = listToUse;
+            // If creating a new list, indicate this to backend
+            if (newListName) {
+                payload.createNewList = 'true';
+            }
+        } else if (action === 'sendTest') {
+            payload.testEmail = document.getElementById('testEmail').value;
+        }
+
+        msg('composeMsg', 'Preparing attachments...');
+        let files = [];
+        const attachmentInput = document.getElementById('attachments');
+        if (attachmentInput && attachmentInput.files && attachmentInput.files.length > 0) {
+            try {
+                files = await readFilesAsBase64(attachmentInput);
+                msg('composeMsg', `Prepared ${files.length} attachment(s). Sending...`);
+            } catch (err) {
+                msg('composeMsg', 'Attachment error: ' + sanitize(err.message));
+                return;
+            }
+        } else {
+            msg('composeMsg', 'No attachments. Sending...');
+        }
+
+        try {
+            const fd = new FormData();
+            Object.entries(payload).forEach(([k, v]) => fd.append(k, typeof v === 'string' ? v : JSON.stringify(v)));
+            if (files.length > 0) {
+                fd.append('filesJson', JSON.stringify(files));
+                fd.append('hasAttachments', 'true');
+            } else {
+                fd.append('filesJson', JSON.stringify([]));
+                fd.append('hasAttachments', 'false');
+            }
+
+            const res = await safeFetch(s.webAppUrl, { method: 'POST', body: fd });
+            const data = await res.json();
+            const attachmentInfo = files.length > 0 ? ` (${files.length} attachment(s))` : '';
+            msg('composeMsg', `<b>${sanitize(data.status||'OK')}</b>: ${sanitize(data.message||'')}${attachmentInfo}<br><small>Sent to list: <b>${listToUse}</b></small>`);
+        } catch (err) { msg('composeMsg', sanitize(err.message)); }
+    }
+
+    document.getElementById('btnTest').addEventListener('click', () => send('sendTest'));
+    document.getElementById('btnSend').addEventListener('click', () => send('sendCampaign'));
+    document.getElementById('btnClear').addEventListener('click', () => {
+        document.getElementById('subject').value = '';
+        document.getElementById('body').value = '';
+        document.getElementById('attachments').value = '';
+        document.getElementById('preview').classList.add('hidden');
+        msg('composeMsg', 'Cleared.');
+    });
+
+    // ======= Dashboard =======
+    async function loadStats() {
+        const { webAppUrl } = getSettings();
+        if (!webAppUrl || webAppUrl.includes('WEB_APP_URL_HERE')) { msg('dashMsg', 'Configure Web App URL in Settings first.'); return; }
+        msg('dashMsg', 'Loading statistics...');
+        try {
+            const res = await safeFetch(`${webAppUrl}?action=stats`);
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+            const data = await res.json();
+            document.getElementById('sentCount').textContent = data.sent || 0;
+            document.getElementById('openCount').textContent = data.opens || 0;
+            document.getElementById('clickCount').textContent = data.clicks || 0;
+            document.getElementById('bounceCount').textContent = data.bounces || 0;
+
+            const ctx = document.getElementById('chart');
+            const labels = (data.timeline || []).map(d => d.date);
+            const opens = (data.timeline || []).map(d => d.opens);
+            const clicks = (data.timeline || []).map(d => d.clicks);
+            if (STATE.trackingChart) STATE.trackingChart.destroy();
+            STATE.trackingChart = new Chart(ctx, { type: 'line', data: { labels, datasets: [{ label: 'Opens', data: opens }, { label: 'Clicks', data: clicks }] }, options: { responsive: true, maintainAspectRatio: false } });
+            msg('dashMsg', `Last updated: ${new Date().toLocaleString()}`);
+        } catch (err) {
+            let errorMsg = 'Stats loading failed: ';
+            if (err.message.includes('Failed to fetch') || err.name === 'TypeError') {
+                errorMsg += 'Cannot connect to backend. Check Web App URL and deployment status.';
+            } else if (err.message.includes('HTTP 4')) {
+                errorMsg += 'Access denied. Check Web App permissions.';
+            } else if (err.message.includes('HTTP 5')) {
+                errorMsg += 'Server error. Check Web App logs.';
+            } else {
+                errorMsg += err.message;
+            }
+            msg('dashMsg', errorMsg);
+        }
+    }
+    document.getElementById('btnRefresh').addEventListener('click', loadStats);
+
+    document.getElementById('btnExport').addEventListener('click', async () => {
+        const { webAppUrl } = getSettings();
+        if (!webAppUrl || webAppUrl.includes('WEB_APP_URL_HERE')) { msg('dashMsg', 'Configure Web App URL in Settings first.'); return; }
+        msg('dashMsg', 'Exporting data...');
+        try {
+            const res = await safeFetch(`${webAppUrl}?action=exportCSV`);
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+            const text = await res.text();
+            const blob = new Blob([text], { type: 'text/csv' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'events.csv';
+            a.click();
+            msg('dashMsg', 'Export completed successfully.');
+        } catch (err) {
+            let errorMsg = 'Export failed: ';
+            if (err.message.includes('Failed to fetch') || err.name === 'TypeError') {
+                errorMsg += 'Cannot connect to backend. Check Web App URL and deployment status.';
+            } else if (err.message.includes('HTTP 4')) {
+                errorMsg += 'Access denied. Check Web App permissions.';
+            } else if (err.message.includes('HTTP 5')) {
+                errorMsg += 'Server error. Check Web App logs.';
+            } else {
+                errorMsg += err.message;
+            }
+            msg('dashMsg', errorMsg);
+        }
+    });
+
+    // ======= Settings / Drafts =======
+    document.getElementById('btnSaveSettings').addEventListener('click', () => {
+        const url = document.getElementById('webAppUrl').value.trim();
+        const sender = document.getElementById('senderEmail').value.trim();
+        if (url) LS.setItem('webAppUrl', url);
+        if (sender) LS.setItem('senderEmail', sender);
+        alert('Saved.');
+    });
+
+    // Attachment display
+    document.getElementById('attachments').addEventListener('change', (e) => {
+        const files = e.target.files;
+        const listEl = document.getElementById('attachmentList');
+        if (files.length === 0) {
+            listEl.innerHTML = '';
+            return;
+        }
+        const chips = Array.from(files).map(f =>
+            `<span class="chip"><i class="fa-solid fa-paperclip"></i> ${sanitize(f.name)} (${(f.size/1024).toFixed(1)}KB)</span>`
+        ).join('');
+        listEl.innerHTML = chips;
+    });
+
+    document.getElementById('btnSaveDraft').addEventListener('click', () => {
+        const campaignName = document.getElementById('campaignName');
+        const fromName = document.getElementById('fromName');
+        const subject = document.getElementById('subject');
+        const msgType = document.getElementById('msgType');
+        const utm = document.getElementById('utm');
+        const body = document.getElementById('body');
+        const targetList = document.getElementById('targetList');
+        const newListName = document.getElementById('newListName');
+        const draft = {
+            campaignName: campaignName.value,
+            fromName: fromName.value,
+            subject: subject.value,
+            msgType: msgType.value,
+            utm: utm.value,
+            body: body.value,
+            targetList: targetList.value,
+            newListName: newListName.value
+        };
+        LS.setItem('draft', JSON.stringify(draft));
+        alert('Draft saved locally.');
+    });
+    document.getElementById('btnLoadDraft').addEventListener('click', () => {
+        const d = JSON.parse(LS.getItem('draft') || '{}');
+        const campaignName = document.getElementById('campaignName');
+        const fromName = document.getElementById('fromName');
+        const subject = document.getElementById('subject');
+        const msgType = document.getElementById('msgType');
+        const utm = document.getElementById('utm');
+        const body = document.getElementById('body');
+        const targetList = document.getElementById('targetList');
+        const newListName = document.getElementById('newListName');
+        campaignName.value = d.campaignName || '';
+        fromName.value = d.fromName || '';
+        subject.value = d.subject || '';
+        msgType.value = d.msgType || 'plain';
+        utm.value = d.utm || 'on';
+        body.value = d.body || '';
+        targetList.value = d.targetList || '';
+        newListName.value = d.newListName || '';
+    });
+
+    document.getElementById('btnHelp').addEventListener('click', () => {
+        alert('Tips:\n• Import contacts, then Upload to Sheets.\n• Use {{name}} placeholder.\n• HTML emails use full HTML; plain sends as text.\n• Test send before running a campaign.\n• Dashboard pulls from Sheets via backend.');
+    });
+
+    // ======= Diagnostics =======
+    async function ping() {
+        const { webAppUrl } = getSettings();
+        if (!webAppUrl || webAppUrl.includes('WEB_APP_URL_HERE')) { msg('diagMsg', 'Configure Web App URL in Settings first.'); return; }
+        msg('diagMsg', 'Pinging backend...');
+        try {
+            const res = await safeFetch(`${webAppUrl}?action=ping`);
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+            const data = await res.json();
+            msg('diagMsg', 'Ping OK: ' + sanitize(JSON.stringify(data)));
+        } catch (err) {
+            let errorMsg = 'Ping failed: ';
+            if (err.message.includes('Failed to fetch') || err.name === 'TypeError') {
+                errorMsg += 'Cannot connect to backend. Check Web App URL and deployment status.';
+            } else if (err.message.includes('HTTP 4')) {
+                errorMsg += 'Access denied. Check Web App permissions.';
+            } else if (err.message.includes('HTTP 5')) {
+                errorMsg += 'Server error. Check Web App logs.';
+            } else {
+                errorMsg += err.message;
+            }
+            msg('diagMsg', errorMsg);
+        }
+    }
+    document.getElementById('btnPing').addEventListener('click', ping);
+
+    document.getElementById('btnTestStats').addEventListener('click', async () => {
+        const { webAppUrl } = getSettings();
+        if (!webAppUrl || webAppUrl.includes('WEB_APP_URL_HERE')) { msg('diagMsg', 'Configure Web App URL in Settings first.'); return; }
+        msg('diagMsg', 'Testing stats endpoint...');
+        try {
+            const res = await safeFetch(`${webAppUrl}?action=stats`);
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+            const d = await res.json();
+            const ok = typeof d.sent === 'number' && Array.isArray(d.timeline);
+            msg('diagMsg', ok ? 'Stats shape OK.' : 'Stats shape unexpected: ' + sanitize(JSON.stringify(d)));
+        } catch (err) {
+            let errorMsg = 'Stats test failed: ';
+            if (err.message.includes('Failed to fetch') || err.name === 'TypeError') {
+                errorMsg += 'Cannot connect to backend. Check Web App URL and deployment status.';
+            } else if (err.message.includes('HTTP 4')) {
+                errorMsg += 'Access denied. Check Web App permissions.';
+            } else if (err.message.includes('HTTP 5')) {
+                errorMsg += 'Server error. Check Web App logs.';
+            } else {
+                errorMsg += err.message;
+            }
+            msg('diagMsg', errorMsg);
+        }
+    });
+
+    document.getElementById('btnTestUpload').addEventListener('click', async () => {
+        const { webAppUrl } = getSettings();
+        if (!webAppUrl || webAppUrl.includes('WEB_APP_URL_HERE')) { msg('diagMsg', 'Configure Web App URL in Settings first.'); return; }
+        msg('diagMsg', 'Testing contact upload...');
+        try {
+            const fd = new FormData();
+            fd.append('action', 'uploadContacts');
+            fd.append('list', 'Diagnostics');
+            fd.append('contacts', JSON.stringify([{ email: `test+${Date.now()}@example.com`, name: 'Diag User' }]));
+            const res = await safeFetch(webAppUrl, { method: 'POST', body: fd });
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+            const data = await res.json();
+            msg('diagMsg', 'Upload test OK: ' + sanitize(JSON.stringify(data)));
+        } catch (err) {
+            let errorMsg = 'Upload test failed: ';
+            if (err.message.includes('Failed to fetch') || err.name === 'TypeError') {
+                errorMsg += 'Cannot connect to backend. Check Web App URL and deployment status.';
+            } else if (err.message.includes('HTTP 4')) {
+                errorMsg += 'Access denied. Check Web App permissions.';
+            } else if (err.message.includes('HTTP 5')) {
+                errorMsg += 'Server error. Check Web App logs.';
+            } else {
+                errorMsg += err.message;
+            }
+            msg('diagMsg', errorMsg);
+        }
+    });
+
+    document.getElementById('btnTestSendDry').addEventListener('click', async () => {
+        const s = getSettings();
+        if (!s.senderEmail) { alert('Set Sender Email in Settings.'); return; }
+        msg('diagMsg', 'Dry‑running sendTest (no actual email sent; backend logs only)...');
+        try {
+            const fd = new FormData();
+            fd.append('action', 'sendTest');
+            fd.append('senderEmail', s.senderEmail);
+            fd.append('fromName', 'Diagnostics');
+            fd.append('subject', 'Diag: Hello');
+            fd.append('body', 'This is a diagnostics message.');
+            fd.append('msgType', 'plain');
+            fd.append('testEmail', 'noreply@example.com');
+            fd.append('utm', 'off');
+            fd.append('filesJson', JSON.stringify([]));
+            const res = await safeFetch(s.webAppUrl, { method: 'POST', body: fd });
+            const data = await res.json();
+            msg('diagMsg', 'Dry‑run response: ' + sanitize(JSON.stringify(data)));
+        } catch (err) { msg('diagMsg', sanitize(err.message)); }
+    });
+
+    // Auto-load settings + initial stats
+    window.addEventListener('DOMContentLoaded', () => {
+        if (LS.getItem('webAppUrl')) document.getElementById('webAppUrl').value = LS.getItem('webAppUrl');
+        if (LS.getItem('senderEmail')) document.getElementById('senderEmail').value = LS.getItem('senderEmail');
+        loadStats();
+    });
+    </script>
+</body>
+
+</html>
